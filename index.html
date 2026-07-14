@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario de Obra — Pardecosas</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F7F6F3;
+    --surface: #FFFFFF;
+    --border: #E4E2DC;
+    --text-primary: #1C1B18;
+    --text-secondary: #6B6860;
+    --text-muted: #9B9890;
+    --obra: #D4EDD4;
+    --obra-border: #5C9E5C;
+    --obra-text: #1E4D1E;
+    --compras: #FFF0C2;
+    --compras-border: #C49A00;
+    --compras-text: #5C4700;
+    --recepcion: #D6EEFF;
+    --recepcion-border: #3A86CC;
+    --recepcion-text: #0D3D6B;
+    --diseno: #EDE4FF;
+    --diseno-border: #7C52CC;
+    --diseno-text: #3B1E7A;
+    --accent: #2D2D2D;
+    --radius: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; }
+
+  header {
+    background: var(--accent); color: white;
+    padding: 20px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    border-bottom: 3px solid #C4A96A;
+  }
+  header h1 { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 600; letter-spacing: 0.02em; }
+  header span { font-size: 12px; color: #999; font-weight: 300; }
+
+  .controls {
+    padding: 16px 32px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .view-toggle { display: flex; background: var(--bg); border-radius: var(--radius); padding: 3px; border: 1px solid var(--border); }
+  .view-btn { padding: 6px 16px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-secondary); transition: all 0.15s; }
+  .view-btn.active { background: var(--accent); color: white; }
+  .nav-btn { padding: 7px 14px; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-primary); transition: all 0.15s; }
+  .nav-btn:hover { background: var(--bg); }
+  .period-label { font-size: 15px; font-weight: 600; color: var(--text-primary); min-width: 220px; text-align: center; }
+  .sync-btn { margin-left: auto; padding: 7px 16px; background: #C4A96A; color: white; border: none; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity 0.15s; }
+  .sync-btn:hover { opacity: 0.85; }
+
+  .leyenda { padding: 10px 32px; display: flex; gap: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .ley-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .ley-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* ── VISTA SEMANA ── */
+  #vista-semana { padding: 24px 32px; }
+  .semana-grid { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .semana-header { display: grid; grid-template-columns: 150px repeat(7, 1fr); background: var(--accent); color: white; }
+  .semana-header-cell { padding: 12px 10px; font-size: 11px; font-weight: 600; text-align: center; letter-spacing: 0.05em; text-transform: uppercase; border-right: 1px solid rgba(255,255,255,0.1); }
+  .semana-header-cell:first-child { text-align: left; padding-left: 16px; }
+
+  .area-row { display: grid; grid-template-columns: 150px repeat(7, 1fr); border-bottom: 1px solid var(--border); min-height: 56px; }
+  .area-row:last-child { border-bottom: none; }
+  .area-separator { grid-column: 1 / -1; height: 4px; background: var(--bg); border-bottom: 1px solid var(--border); }
+
+  .area-label { padding: 10px 12px 10px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: flex-start; padding-top: 12px; border-right: 1px solid var(--border); background: #FAFAF8; color: var(--text-secondary); }
+
+  .day-cell { padding: 6px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 3px; }
+  .day-cell:last-child { border-right: none; }
+
+  .task-chip { padding: 3px 7px; border-radius: 4px; font-size: 10px; font-weight: 500; line-height: 1.4; border-left: 2px solid; }
+  .chip-obra    { background: var(--obra);      border-color: var(--obra-border);      color: var(--obra-text); }
+  .chip-compras { background: var(--compras);   border-color: var(--compras-border);   color: var(--compras-text); }
+  .chip-recep   { background: var(--recepcion); border-color: var(--recepcion-border); color: var(--recepcion-text); }
+  .chip-diseno  { background: var(--diseno);    border-color: var(--diseno-border);    color: var(--diseno-text); }
+
+  /* ── VISTA MES ── */
+  #vista-mes { padding: 24px 32px; }
+  .mes-grid { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .mes-header { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--accent); color: white; }
+  .mes-header-cell { padding: 10px; font-size: 11px; font-weight: 600; text-align: center; text-transform: uppercase; letter-spacing: 0.05em; border-right: 1px solid rgba(255,255,255,0.1); }
+  .mes-header-cell:last-child { border-right: none; }
+  .mes-week-row { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border); min-height: 100px; }
+  .mes-week-row:last-child { border-bottom: none; }
+  .mes-day { padding: 6px 8px; border-right: 1px solid var(--border); font-size: 11px; display: flex; flex-direction: column; gap: 3px; }
+  .mes-day:last-child { border-right: none; }
+  .mes-day.other-month { background: #FAFAF8; opacity: 0.5; }
+  .mes-day.today { background: #FFFBF0; }
+  .day-num { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; }
+  .day-num.today-num { background: var(--accent); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .mes-chip { padding: 2px 5px; border-radius: 3px; font-size: 9px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 2px solid; margin-bottom: 1px; }
+
+
+  /* ── POPUP ── */
+  .popup-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+  .popup-overlay.active { display:flex; }
+  .popup-box { background:white; border-radius:12px; padding:24px; max-width:480px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+  .popup-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px; }
+  .popup-title { font-size:14px; font-weight:600; color:var(--text-primary); }
+  .popup-close { background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-secondary); padding:0 4px; }
+  .popup-area-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; margin-bottom:12px; border-left:3px solid; }
+  .popup-item { padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; line-height:1.5; }
+  .popup-item:last-child { border-bottom:none; }
+  .popup-item-project { font-size:10px; color:var(--text-muted); margin-top:2px; }
+  .popup-empty { color:var(--text-muted); font-size:13px; font-style:italic; }
+  .day-cell { cursor:pointer; transition:background 0.1s; }
+  .day-cell:hover { background:#F0F0EC; }
+
+
+  /* ── FILTRO CLIENTE ── */
+  .filter-bar { padding: 12px 32px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .filter-select { padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; font-family: inherit; color: var(--text-primary); background: var(--bg); min-width: 220px; cursor: pointer; }
+  .filter-clear { padding: 7px 12px; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius); cursor: pointer; font-size: 12px; color: var(--text-secondary); }
+  .filter-clear:hover { background: var(--bg); }
+
+  /* ── VISTA CLIENTE ── */
+  #vista-cliente { padding: 24px 32px; }
+  .cliente-header { margin-bottom: 20px; }
+  .cliente-nombre { font-size: 22px; font-weight: 700; color: var(--text-primary); font-family: 'DM Sans', sans-serif; }
+  .cliente-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .cliente-section-title { padding: 12px 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); background: #FAFAF8; border-bottom: 1px solid var(--border); }
+  .cliente-pagos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+  .pago-item { padding: 14px 16px; border-right: 1px solid var(--border); }
+  .pago-item:last-child { border-right: none; }
+  .pago-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+  .pago-status { font-size: 13px; font-weight: 600; }
+  .pago-pagado { color: #2E7D32; }
+  .pago-pendiente { color: #B45309; }
+  .pago-parcial { color: #1565C0; }
+  .cliente-actividad { padding: 4px 0; }
+  .actividad-row { display: grid; grid-template-columns: 140px 1fr; border-bottom: 1px solid var(--border); min-height: 40px; }
+  .actividad-row:last-child { border-bottom: none; }
+  .actividad-fecha { padding: 10px 16px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: #FAFAF8; border-right: 1px solid var(--border); display: flex; align-items: center; }
+  .actividad-detalle { padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .llegada-row { padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+  .llegada-row:last-child { border-bottom: none; }
+  .llegada-lugar { font-size: 11px; color: var(--text-muted); }
+
+  .state-msg { padding: 60px 32px; text-align: center; color: var(--text-secondary); font-size: 14px; }
+</style>
+</head>
+<body>
+
+
+<!-- POPUP -->
+<div class="popup-overlay" id="popup-overlay" onclick="closePopup(event)">
+  <div class="popup-box">
+    <div class="popup-header">
+      <div class="popup-title" id="popup-title">Detalle</div>
+      <button class="popup-close" onclick="document.getElementById('popup-overlay').classList.remove('active')">✕</button>
+    </div>
+    <div id="popup-content"></div>
+  </div>
+</div>
+
+<header>
+  <h1>📅 Calendario de Obra</h1>
+  <span id="last-sync">Cargando datos...</span>
+</header>
+
+<div class="controls">
+  <div class="view-toggle">
+    <button class="view-btn active" id="btn-semana" onclick="setView('semana')">Semana</button>
+    <button class="view-btn" id="btn-mes" onclick="setView('mes')">Mes</button>
+  </div>
+  <button class="nav-btn" onclick="navPrev()">◀</button>
+  <div class="period-label" id="period-label">—</div>
+  <button class="nav-btn" onclick="navNext()">▶</button>
+  <button class="nav-btn" onclick="goToday()">Hoy</button>
+  <button class="sync-btn" onclick="loadData()">⟳ Sincronizar</button>
+</div>
+
+<div class="leyenda">
+  <div class="ley-item"><div class="ley-dot" style="background:var(--obra-border)"></div> Silvana / Proveedor externo (Obra)</div>
+  <div class="ley-item"><div class="ley-dot" style="background:var(--compras-border)"></div> Compras Item obras</div>
+  <div class="ley-item"><div class="ley-dot" style="background:var(--recepcion-border)"></div> Recepción</div>
+  <div class="ley-item"><div class="ley-dot" style="background:var(--diseno-border)"></div> Diseño en terreno</div>
+</div>
+
+<div class="filter-bar">
+  <span style="font-size:13px;font-weight:500;color:var(--text-secondary)">Ver cliente:</span>
+  <select class="filter-select" id="cliente-select" onchange="onClienteChange()">
+    <option value="">— Todos los proyectos —</option>
+  </select>
+  <button class="filter-clear" id="filter-clear" style="display:none" onclick="clearCliente()">✕ Limpiar filtro</button>
+</div>
+
+<div id="main-content">
+  <div class="state-msg">Conectando con Google Sheets...</div>
+</div>
+
+<script>
+const SHEET_ID   = '1j0eyMV8LNc45XWAVP7L_taXf7iZPzRvr4camExvw-a4';
+const SHEET_NAME = 'Agenda Semanal';
+
+
+const MAESTRO_SHEET_ID = '1cmdF2R81-o_6GjaCAe8OX8d-jv-N0QL65bl7gZSZqvE';
+const MAESTRO_SHEET_NAME = 'Llegadas previstas';
+let maestroData = []; // items with arrival dates
+let statusData = []; // payment status per client
+
+let currentView = 'semana';
+let currentDate = new Date();
+let calData = [];
+
+const DIAS  = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+
+
+async function loadStatus() {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent('STATUS CLIENTES')}`;
+  try {
+    const res = await fetch(url);
+    if(!res.ok) throw new Error();
+    const text = await res.text();
+    const rows = text.trim().split('\n').map(splitCSVRow);
+    statusData = [];
+    for(let i=2; i<rows.length; i++){
+      const row = rows[i];
+      const cliente = (row[2]||'').trim(); // Col C
+      if(!cliente) continue;
+      const fechaPagoInicial = (row[13]||'').trim().replace(/['"]/g,''); // Col N
+      const pagoProd = (row[15]||'').trim(); // Col P - Pago 100% Productos
+      const pagoObra = (row[16]||'').trim(); // Col Q - Pago 80% Obra
+      statusData.push({ cliente, fechaPagoInicial, pagoProd, pagoObra });
+    }
+  } catch(e) {}
+  // Debug first maestro row
+
+  // Populate cliente dropdown
+  const sel = document.getElementById('cliente-select');
+  if(sel) {
+    const existing = new Set([...sel.options].map(o=>o.value).filter(Boolean));
+    statusData.forEach(s => {
+      if(s.cliente && !existing.has(s.cliente)){
+        const opt = document.createElement('option');
+        opt.value = s.cliente;
+        opt.textContent = s.cliente;
+        sel.appendChild(opt);
+        existing.add(s.cliente);
+      }
+    });
+  }
+}
+
+function parseDate(str) {
+  if(!str) return null;
+  // Try DD/MM/YYYY or DD/MM
+  const m = str.match(/(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?/);
+  if(!m) return null;
+  const d = parseInt(m[1]), mo = parseInt(m[2])-1;
+  const y = m[3] ? (m[3].length===2 ? 2000+parseInt(m[3]) : parseInt(m[3])) : new Date().getFullYear();
+  return new Date(y, mo, d);
+}
+
+function addWorkdays(date, days) {
+  let d = new Date(date);
+  let added = 0;
+  while(added < days) {
+    d.setDate(d.getDate()+1);
+    if(d.getDay()!==0 && d.getDay()!==6) added++;
+  }
+  return d;
+}
+
+function getStatusAlertsForDay(d) {
+  const alerts = [];
+  for(const s of statusData) {
+    const fechaPago = parseDate(s.fechaPagoInicial);
+    if(!fechaPago) continue;
+
+    // Compras: mismo día que pagó productos
+    if(s.pagoProd === 'Pagado' && sameDay(fechaPago, d)) {
+      alerts.push({ type: 'compras', text: `🛒 Inicio compras — ${s.cliente}`, area: 'compras' });
+    }
+
+    // Vencimiento: fecha pago + 14 días hábiles
+    const vence = addWorkdays(fechaPago, 14);
+    if(s.pagoProd === 'Pagado' && sameDay(vence, d)) {
+      alerts.push({ type: 'compras', text: `⏰ Vence plazo compras — ${s.cliente}`, area: 'compras' });
+    }
+
+    // Inicio obra: cuando pagó 80% obra
+    if(s.pagoObra === 'Pagado' && sameDay(fechaPago, d)) {
+      alerts.push({ type: 'obra', text: `🔨 Inicio obra — ${s.cliente}`, area: 'obra' });
+    }
+  }
+  return alerts;
+}
+
+async function loadMaestro() {
+  const url = `https://docs.google.com/spreadsheets/d/${MAESTRO_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(MAESTRO_SHEET_NAME)}`;
+  try {
+    const res = await fetch(url);
+    if(!res.ok) throw new Error();
+    const text = await res.text();
+    const rows = text.trim().split('\n').map(splitCSVRow);
+    maestroData = [];
+    for(let i=1; i<rows.length; i++){ // skip row 0 (header)
+      const row = rows[i];
+      const proyecto = (row[0]||'').trim();
+      const item = (row[1]||'').trim();
+      const fechaLlegada = (row[2]||'').trim(); // col C = Fecha llegada prevista
+      const lugar = (row[3]||'').trim(); // col D = Lugar llegada previsto
+      const statusCompra = (row[4]||'').trim(); // col E = Status compra
+      const fechaClean = fechaLlegada.replace(/['"\s]/g,'');
+      if(fechaClean && item){
+        maestroData.push({ proyecto, item, fechaLlegada: fechaClean, lugar, statusCompra });
+      }
+    }
+    if(rows.length > 1) console.log('RAW ROW1:', JSON.stringify(rows[1].slice(0,8)));
+    if(maestroData.length > 0) console.log('MAESTRO ROW0:', JSON.stringify({p:maestroData[0].proyecto,i:maestroData[0].item,f:maestroData[0].fechaLlegada}));
+  } catch(e) {
+    console.log('MAESTRO ERROR:', e.message);
+  }
+}
+
+function getMaestroItemsForDay(d) {
+  const day = d.getDate();
+  const month = d.getMonth()+1;
+  const year = d.getFullYear();
+  const year2 = String(year).slice(2);
+  // Generar todos los formatos posibles con y sin cero adelante
+  const days = [String(day), String(day).padStart(2,'0')];
+  const months = [String(month), String(month).padStart(2,'0')];
+  const formats = [];
+  days.forEach(dd => months.forEach(mm => {
+    formats.push(`${dd}/${mm}/${year}`);
+    formats.push(`${dd}/${mm}/${year2}`);
+    formats.push(`${dd}/${mm}`);
+    formats.push(`${dd}-${mm}-${year}`);
+    formats.push(`${dd}-${mm}-${year2}`);
+  }));
+  return maestroData.filter(item => {
+    return formats.some(fmt => item.fechaLlegada === fmt || item.fechaLlegada.startsWith(fmt));
+  });
+}
+
+// ── LOAD ──────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('main-content').innerHTML = '<div class="state-msg">Sincronizando...</div>';
+  await loadMaestro();
+  await loadStatus();
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error();
+    const text = await res.text();
+    calData = parseCSV(text);
+    document.getElementById('last-sync').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CL');
+    // DEBUG
+    const areas = new Set();
+    calData.forEach(w => w.entries.forEach(e => areas.add(JSON.stringify(e.area))));
+  } catch(e) {
+    calData = getDemoData();
+    document.getElementById('last-sync').textContent = '⚠️ Datos de ejemplo — publica el Sheets para sincronizar';
+  }
+  render();
+}
+
+// ── PARSE CSV ─────────────────────────────────────────────
+function splitCSVRow(r) {
+  const cells = []; let cur = '', inQ = false;
+  for(let i=0;i<r.length;i++){
+    if(r[i]==='"'){inQ=!inQ;continue;}
+    if(r[i]===',' && !inQ){cells.push(cur.trim());cur='';continue;}
+    cur+=r[i];
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+
+function parseCSV(text) {
+  const rows = text.trim().split('\n').map(splitCSVRow);
+  const data = [];
+  let currentWeek = null;
+
+  for(const row of rows){
+    // Detectar fila de semana: col A tiene "Sem DD/MM"
+    const semMatch = row[0] && row[0].match(/Sem\s+(\d{1,2})\/(\d{1,2})/i);
+    if(semMatch){
+      const d=parseInt(semMatch[1]), m=parseInt(semMatch[2])-1;
+      const now = new Date();
+      let y = now.getFullYear();
+      currentWeek = { weekStart: new Date(y,m,d), entries: [] };
+      data.push(currentWeek);
+    }
+    if(!currentWeek) continue;
+    const area = (row[8]||'').trim();
+    if(!area) continue;
+    if(area.toLowerCase()==='área'||area.toLowerCase()==='area') continue;
+    const tasks = [row[1]||'',row[2]||'',row[3]||'',row[4]||'',row[5]||'',row[6]||'',row[7]||''];
+    currentWeek.entries.push({ area, tasks, project: (row[9]||'').trim() });
+  }
+
+  // Debug
+  data.forEach(w => {
+  });
+
+  return data;
+}
+
+// ── DEMO DATA ─────────────────────────────────────────────
+function getDemoData() {
+  const w = (y,m,d) => new Date(y,m,d);
+  return [
+    { weekStart: w(2026,5,29), entries: [
+      { area:'Silvana', tasks:['','Supresión red gas','Cambio grifería + Fragüe baño','Instalación eléctrica horno/LED','Instalación eléctrica horno/LED','',''], project:'Carlos Sepúlveda' },
+      { area:'Proveedor externo', tasks:['','','','','','',''], project:'' },
+      { area:'Compras Item obras', tasks:['','','','','','',''], project:'' },
+      { area:'Recepción', tasks:['','','','','','',''], project:'' },
+      { area:'Diseño en terreno', tasks:['','','','','','',''], project:'' },
+    ]},
+    { weekStart: w(2026,6,6), entries: [
+      { area:'Silvana', tasks:['','Cerámicos muro cocina/Piso vinílico Living','Cerámicos muro cocina / Piso vinílico Living','Piso vinílico Cocina + Piso vinílico dormitorio','','',''], project:'Carlos Sepúlveda' },
+      { area:'Proveedor externo', tasks:['','','','','','',''], project:'' },
+      { area:'Compras Item obras', tasks:['','','','','','',''], project:'' },
+      { area:'Recepción', tasks:['','','','','','',''], project:'' },
+      { area:'Diseño en terreno', tasks:['','','','','','',''], project:'' },
+    ]},
+    { weekStart: w(2026,6,13), entries: [
+      { area:'Silvana', tasks:['Cornisas living/dorm','Cornisas living/dorm','Guardapolvo Liv/Coc/Dorm + Rest. pilastra puertas','Wall panel dorm + Repisas living + Rest. pilastra puertas','Bloqueador muros + Rest. pilastra puertas','Pintura Cielo','Pintura muros + Pintura puertas'], project:'Carlos Sepúlveda' },
+      { area:'Proveedor externo', tasks:['','','','','','',''], project:'' },
+      { area:'Compras Item obras', tasks:['','','','','','',''], project:'' },
+      { area:'Recepción', tasks:['','','','','','',''], project:'' },
+      { area:'Diseño en terreno', tasks:['','','','','','',''], project:'' },
+    ]},
+  ];
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function getWeekStart(d) {
+  const dt = new Date(d); const day = dt.getDay();
+  dt.setDate(dt.getDate() + (day===0?-6:1-day)); dt.setHours(0,0,0,0); return dt;
+}
+function sameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function getAreaType(n){
+  const s=n.toLowerCase();
+  if(s.includes('silvana')||s.includes('proveedor')) return 'obra';
+  if(s.includes('compras')) return 'compras';
+  if(s.includes('recep')) return 'recepcion';
+  return 'diseno';
+}
+
+// ── CONSOLIDAR: una fila por persona ──────────────────────
+function normalizeArea(s){ return s.toLowerCase().replace(/\s+/g,' ').trim(); }
+
+function consolidateEntries(entries) {
+  const map = new Map();
+  const areaNames = new Map(); // normalized → original from data
+  for(const e of entries){
+    const key = normalizeArea(e.area);
+    if(!map.has(key)){
+      map.set(key, { area: e.area, tasks: ['','','','','','',''], projects: ['','','','','','',''] });
+      areaNames.set(key, e.area);
+    }
+    const row = map.get(key);
+    for(let i=0;i<7;i++){
+      if(e.tasks[i]){
+        row.tasks[i] = row.tasks[i] ? row.tasks[i] + '\n' + e.tasks[i] : e.tasks[i];
+      }
+      if(e.project){
+        if(!row.projects[i]) row.projects[i] = e.project;
+        else if(!row.projects[i].includes(e.project)) row.projects[i] += ', ' + e.project;
+      }
+    }
+  }
+  // Orden fijo de áreas — siempre mostrar todas aunque estén vacías
+  const order = ['silvana','proveedor externo','compras item obras','recepción','diseño en terreno'];
+  const displayNames = {'silvana':'Silvana','proveedor externo':'Proveedor externo','compras item obras':'Compras Item obras','recepción':'Recepción','diseño en terreno':'Diseño en terreno'};
+  return order.map(a => map.get(a) || { area: displayNames[a], tasks: ['','','','','','',''], projects: ['','','','','','',''] });
+}
+
+
+// ── POPUP ─────────────────────────────────────────────────
+function openPopup(area, dayDate, tasks, type) {
+  const title = `${area} — ${DIAS[dayDate.getDay()===0?6:dayDate.getDay()-1]} ${dayDate.getDate()}/${dayDate.getMonth()+1}`;
+  document.getElementById('popup-title').textContent = title;
+
+  const colors = { obra:'var(--obra)', compras:'var(--compras)', recepcion:'var(--recepcion)', diseno:'var(--diseno)' };
+  const borders = { obra:'var(--obra-border)', compras:'var(--compras-border)', recepcion:'var(--recepcion-border)', diseno:'var(--diseno-border)' };
+
+  let html = `<div class="popup-area-badge chip-${type}" style="background:${colors[type]};border-color:${borders[type]}">${area}</div>`;
+
+  // Items from Agenda Semanal
+  const items = tasks.filter(Boolean);
+  if(items.length){
+    items.forEach(t => { html += `<div class="popup-item">${t}</div>`; });
+  }
+
+  // If Compras, show payment alerts
+  if(area.toLowerCase().includes('compras')){
+    const alerts = getStatusAlertsForDay(dayDate).filter(a=>a.area==='compras');
+    if(alerts.length){
+      html += `<div style="margin-top:12px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em">💰 Alertas de pago</div>`;
+      alerts.forEach(a => { html += `<div class="popup-item">${a.text}</div>`; });
+    }
+  }
+
+  // If Silvana, show obra alerts
+  if(area.toLowerCase().includes('silvana')){
+    const alerts = getStatusAlertsForDay(dayDate).filter(a=>a.area==='obra');
+    if(alerts.length){
+      html += `<div style="margin-top:12px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em">🔨 Inicio de obra</div>`;
+      alerts.forEach(a => { html += `<div class="popup-item">${a.text}</div>`; });
+    }
+  }
+
+  // If Recepción, also show Maestro items
+  if(area.toLowerCase().includes('recep')){
+    const maestroItems = getMaestroItemsForDay(dayDate);
+    if(maestroItems.length){
+      html += `<div style="margin-top:12px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em">📦 Llegadas previstas (Maestro)</div>`;
+      maestroItems.forEach(m => {
+        html += `<div class="popup-item"><strong>${m.item}</strong><div class="popup-item-project">${m.proyecto} — ${m.lugar||'Sin lugar definido'}</div></div>`;
+      });
+    } else if(!items.length) {
+      html += `<div class="popup-empty">Sin llegadas previstas este día</div>`;
+    }
+  } else if(!items.length) {
+    html += `<div class="popup-empty">Sin actividades registradas</div>`;
+  }
+
+  document.getElementById('popup-content').innerHTML = html;
+  document.getElementById('popup-overlay').classList.add('active');
+}
+
+function closePopup(e) {
+  if(e.target === document.getElementById('popup-overlay'))
+    document.getElementById('popup-overlay').classList.remove('active');
+}
+
+
+// ── FILTRO CLIENTE ─────────────────────────────────────────
+let selectedCliente = '';
+
+function onClienteChange() {
+  const sel = document.getElementById('cliente-select');
+  selectedCliente = sel.value;
+  document.getElementById('filter-clear').style.display = selectedCliente ? 'block' : 'none';
+  if(selectedCliente) renderCliente();
+  else render();
+}
+
+function clearCliente() {
+  selectedCliente = '';
+  document.getElementById('cliente-select').value = '';
+  document.getElementById('filter-clear').style.display = 'none';
+  render();
+}
+
+function renderCliente(mc) {
+  mc = mc || document.getElementById('main-content');
+  document.getElementById('period-label').textContent = selectedCliente;
+
+  // Find client status
+  const st = statusData.find(s => s.cliente === selectedCliente) || {};
+
+  // Find all calendar activities for this client
+  const actividades = [];
+  for(const week of calData){
+    const ws = getWeekStart(week.weekStart);
+    for(let i=0;i<7;i++){
+      const d = addDays(ws,i);
+      const tareas = [];
+      for(const entry of week.entries){
+        const txt = entry.tasks[i] || '';
+        // Split by | to handle multiple projects in same cell
+        const partes = txt.split('|').map(p=>p.trim()).filter(Boolean);
+        partes.forEach(parte => {
+          if(parte.toLowerCase().includes(selectedCliente.toLowerCase())){
+            tareas.push({ area: entry.area, txt: parte, type: getAreaType(entry.area) });
+          }
+        });
+        // Also check project field
+        if(entry.project && entry.project.toLowerCase().includes(selectedCliente.toLowerCase()) && txt && !tareas.find(t=>t.area===entry.area)){
+          tareas.push({ area: entry.area, txt, type: getAreaType(entry.area) });
+        }
+      }
+      if(tareas.length) actividades.push({ d, tareas });
+    }
+  }
+
+  // Find maestro items for this client
+  const clienteLower = selectedCliente.trim().toLowerCase();
+  // Debug: log first 5 proyecto names from maestro
+  console.log('BUSCANDO:', JSON.stringify(clienteLower));
+  console.log('TOTAL MAESTRO:', maestroData.length);
+  const maestroItems = maestroData.filter(m => m.proyecto.trim().toLowerCase().includes(clienteLower) || clienteLower.includes(m.proyecto.trim().toLowerCase()));
+  console.log('ITEMS ENCONTRADOS:', maestroItems.length);
+
+  const pagoStatus = (val) => {
+    if(!val) return '<span class="pago-status pago-pendiente">—</span>';
+    if(val.toLowerCase().includes('pagado')) return `<span class="pago-status pago-pagado">✅ Pagado</span>`;
+    if(val.toLowerCase().includes('parcial')) return `<span class="pago-status pago-parcial">⏳ Parcial</span>`;
+    return `<span class="pago-status pago-pendiente">⏰ Pendiente</span>`;
+  };
+
+  let html = `<div id="vista-cliente">`;
+  html += `<div class="cliente-header"><div class="cliente-nombre">${selectedCliente}</div></div>`;
+
+  // Pagos
+  html += `<div class="cliente-section">
+    <div class="cliente-section-title">💰 Estado de pagos</div>
+    <div class="cliente-pagos">
+      <div class="pago-item"><div class="pago-label">100% Productos</div>${pagoStatus(st.pagoProd)}</div>
+      <div class="pago-item"><div class="pago-label">80% Obra (inicio)</div>${pagoStatus(st.pagoObra)}</div>
+      <div class="pago-item"><div class="pago-label">Fecha pago inicial</div><span class="pago-status" style="color:var(--text-primary)">${st.fechaPagoInicial||'—'}</span></div>
+      <div class="pago-item"><div class="pago-label">Vence plazo compras</div><span class="pago-status" style="color:var(--text-primary)">${st.fechaPagoInicial ? addWorkdays(parseDate(st.fechaPagoInicial),14).toLocaleDateString('es-CL') : '—'}</span></div>
+    </div>
+  </div>`;
+
+  // Actividad en calendario
+  html += `<div class="cliente-section"><div class="cliente-section-title">📅 Actividad en calendario</div><div class="cliente-actividad">`;
+  if(actividades.length){
+    actividades.forEach(a => {
+      html += `<div class="actividad-row">
+        <div class="actividad-fecha">${DIAS[a.d.getDay()===0?6:a.d.getDay()-1]} ${a.d.getDate()}/${a.d.getMonth()+1}</div>
+        <div class="actividad-detalle">`;
+      a.tareas.forEach(t => { html += `<div class="task-chip chip-${t.type}">${t.area}: ${t.txt}</div>`; });
+      html += `</div></div>`;
+    });
+  } else {
+    html += `<div style="padding:16px;color:var(--text-muted);font-size:13px">Sin actividades registradas en el calendario</div>`;
+  }
+  html += `</div></div>`;
+
+  // Llegadas del Maestro
+  html += `<div class="cliente-section"><div class="cliente-section-title">📦 Ítems con fecha de llegada (Maestro)</div>`;
+  if(maestroItems.length){
+    maestroItems.forEach(m => {
+      const esRetiro = m.lugar.toLowerCase().startsWith('retir');
+      html += `<div class="llegada-row">
+        <div><strong>${m.item}</strong><div class="llegada-lugar">${esRetiro?'🚗':'📦'} ${m.lugar||'Sin lugar'} — Status: ${m.statusCompra||'—'}</div></div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary)">${m.fechaLlegada}</div>
+      </div>`;
+    });
+  } else {
+    html += `<div style="padding:16px;color:var(--text-muted);font-size:13px">Sin ítems con fecha de llegada en el Maestro</div>`;
+  }
+  html += `</div>`;
+
+  html += `</div>`;
+  mc.innerHTML = html;
+}
+
+// ── RENDER ────────────────────────────────────────────────
+function render(){
+  if(selectedCliente){ renderCliente(); return; }
+  const mc = document.getElementById('main-content');
+  if(currentView==='semana') renderSemana(mc);
+  else renderMes(mc);
+}
+
+// ── VISTA SEMANA ──────────────────────────────────────────
+function renderSemana(mc){
+  const ws = getWeekStart(currentDate);
+  const we = addDays(ws,6);
+  document.getElementById('period-label').textContent =
+    `${ws.getDate()} ${MESES[ws.getMonth()].slice(0,3)} — ${we.getDate()} ${MESES[we.getMonth()].slice(0,3)} ${we.getFullYear()}`;
+
+  const weekData = calData.find(w => sameDay(getWeekStart(w.weekStart), ws));
+  const today = new Date();
+
+  let html = `<div id="vista-semana"><div class="semana-grid">`;
+
+  // Header
+  html += `<div class="semana-header"><div class="semana-header-cell">Área</div>`;
+  for(let i=0;i<7;i++){
+    const d=addDays(ws,i); const isToday=sameDay(d,today);
+    html += `<div class="semana-header-cell" style="${isToday?'background:#C4A96A':''}">${DIAS[i].slice(0,3).toUpperCase()}<br><span style="font-weight:300;font-size:13px">${d.getDate()}/${d.getMonth()+1}</span></div>`;
+  }
+  html += `</div>`;
+
+  if(!weekData || !weekData.entries.length){
+    html += `<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:13px">Sin actividades registradas esta semana</div>`;
+  } else {
+    const consolidated = consolidateEntries(weekData.entries);
+    let lastType = null;
+    for(const row of consolidated){
+      const type = getAreaType(row.area);
+      if(lastType && lastType !== type){
+        html += `<div class="area-separator"></div>`;
+      }
+      lastType = type;
+      html += `<div class="area-row"><div class="area-label">${row.area}</div>`;
+      for(let i=0;i<7;i++){
+        const cellDate = addDays(ws,i);
+        const cellTasks = row.tasks[i] ? row.tasks[i].split('\n').filter(t=>t.trim()) : [];
+        const escapedArea = row.area.replace(/'/g,"\\'");
+        const escapedTasks = JSON.stringify(cellTasks).replace(/'/g,"\\'");
+        const escapedType = type;
+        const escapedDate = cellDate.toISOString();
+        html += `<div class="day-cell" onclick="openPopup('${escapedArea}', new Date('${escapedDate}'), JSON.parse('${escapedTasks}'), '${escapedType}')">`;
+
+        if(cellTasks.length > 0) {
+          // Mostrar primer tarea + contador si hay más
+          html += `<div class="task-chip chip-${escapedType}">${cellTasks[0]}</div>`;
+          if(cellTasks.length > 1) {
+            html += `<div class="task-chip chip-${escapedType}" style="opacity:0.7">+${cellTasks.length-1} más...</div>`;
+          }
+        }
+
+        // Para Recepción: mostrar chip de llegadas del Maestro
+        if(escapedArea.toLowerCase().includes('recep')){
+          const maestroItems = getMaestroItemsForDay(cellDate);
+          if(maestroItems.length > 0){
+            const retiros = maestroItems.filter(m => m.lugar.toLowerCase().startsWith('retir'));
+            const llegadas = maestroItems.filter(m => !m.lugar.toLowerCase().startsWith('retir'));
+            if(llegadas.length > 0) html += `<div class="task-chip chip-recep">📦 ${llegadas.length} llegada${llegadas.length>1?'s':''} prevista${llegadas.length>1?'s':''}</div>`;
+            if(retiros.length > 0) html += `<div class="task-chip chip-recep">🚗 ${retiros.length} artículo${retiros.length>1?'s':''} por retirar</div>`;
+          }
+        }
+
+        // Para Compras: mostrar alertas de pago
+        if(escapedArea.toLowerCase().includes('compras')){
+          const alerts = getStatusAlertsForDay(cellDate).filter(a=>a.area==='compras');
+          alerts.forEach(a => {
+            html += `<div class="task-chip chip-compras">${a.text}</div>`;
+          });
+        }
+
+        // Para Silvana/Proveedor: mostrar inicio de obra
+        if(escapedArea.toLowerCase().includes('silvana')){
+          const alerts = getStatusAlertsForDay(cellDate).filter(a=>a.area==='obra');
+          alerts.forEach(a => {
+            html += `<div class="task-chip chip-obra">${a.text}</div>`;
+          });
+        }
+
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  html += `</div></div>`;
+  mc.innerHTML = html;
+}
+
+// ── VISTA MES ─────────────────────────────────────────────
+function renderMes(mc){
+  const year=currentDate.getFullYear(), month=currentDate.getMonth();
+  document.getElementById('period-label').textContent = `${MESES[month]} ${year}`;
+
+  const firstDay=new Date(year,month,1), lastDay=new Date(year,month+1,0);
+  let start=getWeekStart(firstDay);
+  const today=new Date();
+
+  let html=`<div id="vista-mes"><div class="mes-grid"><div class="mes-header">`;
+  DIAS.forEach(d=>{ html+=`<div class="mes-header-cell">${d.slice(0,3)}</div>`; });
+  html+=`</div>`;
+
+  let cur=new Date(start);
+  while(cur<=lastDay || cur.getDay()!==1){
+    if(cur>lastDay&&cur.getDay()===1) break;
+    html+=`<div class="mes-week-row">`;
+    for(let i=0;i<7;i++){
+      const d=new Date(cur);
+      const isOther=d.getMonth()!==month, isToday=sameDay(d,today);
+      html+=`<div class="mes-day ${isOther?'other-month':''} ${isToday?'today':''}">`;
+      html+=`<div class="${isToday?'day-num today-num':'day-num'}">${d.getDate()}</div>`;
+
+      // En mes: mostrar proyecto + área
+      const acts = getActivitiesForDay(d);
+      acts.forEach(a=>{
+        const label = a.project || a.task;
+        if(label) html+=`<div class="mes-chip chip-${a.type}" title="${a.area}: ${a.task}">${label.length>20?label.slice(0,19)+'…':label}</div>`;
+      });
+
+      html+=`</div>`;
+      cur.setDate(cur.getDate()+1);
+    }
+    html+=`</div>`;
+  }
+
+  html+=`</div></div>`;
+  mc.innerHTML=html;
+}
+
+function getActivitiesForDay(d){
+  const results=[];
+  const seen=new Set();
+  for(const week of calData){
+    const ws=getWeekStart(week.weekStart);
+    for(let i=0;i<7;i++){
+      if(sameDay(addDays(ws,i),d)){
+        for(const entry of week.entries){
+          const task=entry.tasks[i], project=entry.project;
+          const key=`${entry.area}-${project||task}`;
+          if((task||project) && !seen.has(key)){
+            seen.add(key);
+            results.push({ area:entry.area, task, project, type:getAreaType(entry.area) });
+          }
+        }
+      }
+    }
+  }
+  return results;
+}
+
+// ── NAV ───────────────────────────────────────────────────
+function setView(v){
+  currentView=v;
+  document.getElementById('btn-semana').classList.toggle('active',v==='semana');
+  document.getElementById('btn-mes').classList.toggle('active',v==='mes');
+  render();
+}
+function navPrev(){ if(currentView==='semana') currentDate=addDays(currentDate,-7); else currentDate=new Date(currentDate.getFullYear(),currentDate.getMonth()-1,1); render(); }
+function navNext(){ if(currentView==='semana') currentDate=addDays(currentDate,7); else currentDate=new Date(currentDate.getFullYear(),currentDate.getMonth()+1,1); render(); }
+function goToday(){ currentDate=new Date(); render(); }
+
+loadData();
+</script>
+</body>
+</html>
